@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "module": "esnext",
+    "noEmit": false,
+    "outDir": "build",
+    "rootDir": "src",
+    "types": [
+      "react"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

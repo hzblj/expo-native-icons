@@ -1,0 +1,50 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "extends": [
+    "@hzblj/biome-config",
+    "@hzblj/biome-config/react-native"
+  ],
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!**/build",
+      "!**/node_modules"
+    ]
+  },
+  "overrides": [
+    {
+      "includes": [
+        "app.plugin.js",
+        "bin/*.js"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredVariables": "off"
+          },
+          "style": {
+            "noCommonJs": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "plugin/src/cli.ts",
+        "plugin/test/**"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ]
+}

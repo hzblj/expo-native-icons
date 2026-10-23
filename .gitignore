@@ -1,0 +1,17 @@
+.DS_Store
+.idea/
+.claude/
+node_modules/
+build/
+*.tsbuildinfo
+
+# Yarn (Berry): corepack provides Yarn via packageManager, so .yarn is not tracked
+.yarn/
+.pnp.*
+
+# Android Gradle output
+android/.gradle/
+android/build/
+
+# npm pack / publish artifacts
+*.tgz
