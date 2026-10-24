@@ -47,6 +47,9 @@ class NativeIconView(context: Context, appContext: AppContext) : ExpoView(contex
     // `mutate()`: the inflated drawable shares its state with every other copy of the resource, tint included.
     drawable = DrawableIds.of(context, name).takeIf { it != 0 }?.let { context.getDrawable(it)?.mutate() }?.also {
       it.setTintList(tint)
+      // The view's state, not a fresh drawable's empty one: `textColorPrimary` is a selector, and an empty state
+      // matches its `state_enabled="false"` entry, the faded disabled colour.
+      it.state = drawableState
       it.callback = this
     }
     updateDrawableBounds()
@@ -70,6 +73,13 @@ class NativeIconView(context: Context, appContext: AppContext) : ExpoView(contex
   }
 
   override fun verifyDrawable(who: Drawable): Boolean = who === drawable || super.verifyDrawable(who)
+
+  override fun drawableStateChanged() {
+    super.drawableStateChanged()
+    if (drawable?.setState(drawableState) == true) {
+      invalidate()
+    }
+  }
 
   /** Centred and scaled to fit, keeping the glyph's own aspect ratio, like `ImageView`'s `FIT_CENTER`. */
   private fun updateDrawableBounds() {
