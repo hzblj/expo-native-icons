@@ -1,5 +1,11 @@
 # @hzblj/expo-native-icons
 
+## 0.1.3
+
+### Patch Changes
+
+- [`08a73d4`](https://github.com/hzblj/expo-native-icons/commit/08a73d4366381deab4aca8f5df3a5f230102eaa3) Thanks [@hzblj](https://github.com/hzblj)! - The LICENSE is the complete MIT license, with the limitation of liability it was missing.
+
 ## 0.1.2
 
 ### Patch Changes
