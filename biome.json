@@ -1,26 +1,41 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "extends": [
     "@hzblj/biome-config",
     "@hzblj/biome-config/react-native"
   ],
-  "vcs": {
-    "clientKind": "git",
-    "enabled": true,
-    "useIgnoreFile": true
-  },
   "files": {
     "includes": [
       "**",
+      "!**/node_modules",
+      "!**/.expo",
+      "!**/.turbo",
+      "!**/.pack-check",
       "!**/build",
-      "!**/node_modules"
+      "!apps/example/ios",
+      "!apps/example/android",
+      "!**/expo-env.d.ts"
     ]
   },
   "overrides": [
     {
       "includes": [
-        "app.plugin.js",
-        "bin/*.js"
+        "**/babel.config.js",
+        "**/metro.config.js",
+        "**/app.plugin.js"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noCommonJs": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/*/app.plugin.js",
+        "packages/*/bin/*.js"
       ],
       "linter": {
         "rules": {
@@ -35,8 +50,9 @@
     },
     {
       "includes": [
-        "plugin/src/cli.ts",
-        "plugin/test/**"
+        "scripts/**",
+        "packages/*/plugin/src/cli.ts",
+        "packages/*/plugin/test/**"
       ],
       "linter": {
         "rules": {

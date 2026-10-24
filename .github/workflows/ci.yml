@@ -1,26 +1,78 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify:
+  check:
+    name: Lint, typecheck, test, pack
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: corepack enable
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --immutable
-      - run: yarn lint
-      - run: yarn typecheck
-      - run: yarn test
-      - run: yarn build
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Biome
+        run: yarn biome:check
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      # The generator over SVG folders: parsing, platform variants, the image sets, drawables and declaration, the CLI.
+      - name: Test
+        run: yarn test
+
+      # Builds the package, packs it the way npm will receive it, runs its config plugin and CLI from the tarball and
+      # type-checks real usage from a throwaway consumer.
+      - name: Pack check
+        run: yarn pack:check
+
+  android:
+    name: Android module
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # The module compiles inside the example's Gradle project, the way an app builds it. Prebuild loads the config
+      # plugin from plugin/build, so the package is built first.
+      - name: Prebuild the example
+        run: yarn workspace @hzblj/expo-native-icons build && yarn workspace expo-native-icons-example expo prebuild --platform android --no-install
+
+      - name: Compile the module
+        working-directory: apps/example/android
+        run: ./gradlew :hzblj-expo-native-icons:compileDebugKotlin --console=plain

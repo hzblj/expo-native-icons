@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "react"]
+  },
+  // The plugin's tests import both halves: `plugin/src` for Node and `src/iconResourceName.ts` for the app.
+  "include": ["src/**/*.ts", "src/**/*.tsx", "plugin/test/**/*.ts"]
+}
