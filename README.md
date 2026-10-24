@@ -40,6 +40,10 @@ yarn pack:check      # pack the package as npm gets it, run its plugin and type-
 yarn changeset       # describe a change for the next release
 ```
 
+## More libraries
+
+The other libraries from the same author are at **[libraries.janblazej.dev](https://www.libraries.janblazej.dev)**.
+
 ## License
 
 MIT © Jan Blazej
