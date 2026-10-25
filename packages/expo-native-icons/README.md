@@ -5,6 +5,11 @@
 
 Your own SVG icons as real native assets in Expo. A config plugin turns a folder of SVGs into iOS asset catalog images and Android vector drawables at prebuild, types their names, and a native view draws them tinted at any size.
 
+<p>
+  <img alt="Material Symbols drawn as native icons, in the example on iOS" height="560" src="https://raw.githubusercontent.com/hzblj/expo-native-icons/main/media/ios-gallery.png" />
+  <img alt="The same on Android" height="560" src="https://raw.githubusercontent.com/hzblj/expo-native-icons/main/media/android-gallery.png" />
+</p>
+
 - iOS: a template image set per icon, vector data kept, so it scales crisply and takes the tint
 - Android: a vector drawable per icon, the same resource `ImageView` and Compose's `painterResource` draw
 - A platform variant per icon: `share.android.svg` replaces `share.svg` on Android

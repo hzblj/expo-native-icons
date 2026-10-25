@@ -5,6 +5,11 @@
 
 Your own SVG icons as real native assets in Expo. A config plugin turns a folder of SVGs into iOS asset catalog images and Android vector drawables at prebuild and types their names, and a native view draws them tinted at any size. No icon font, no `react-native-svg` at runtime, no JavaScript drawing.
 
+<p>
+  <img alt="Material Symbols drawn as native icons, in the example on iOS" height="560" src="media/ios-gallery.png" />
+  <img alt="The same on Android" height="560" src="media/android-gallery.png" />
+</p>
+
 ```sh
 npx expo install @hzblj/expo-native-icons
 ```
