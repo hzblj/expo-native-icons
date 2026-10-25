@@ -1,5 +1,11 @@
 # @hzblj/expo-native-icons
 
+## 0.1.4
+
+### Patch Changes
+
+- [`f6efacb`](https://github.com/hzblj/expo-native-icons/commit/f6efacb85f587a71ce2711c32a2d2965090344ed) Thanks [@hzblj](https://github.com/hzblj)! - The README shows the example app on iOS and Android.
+
 ## 0.1.3
 
 ### Patch Changes

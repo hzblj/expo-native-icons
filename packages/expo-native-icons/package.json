@@ -1,6 +1,6 @@
 {
   "name": "@hzblj/expo-native-icons",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Your SVG icons as native assets for Expo: a config plugin that turns them into iOS asset catalog images and Android vector drawables, typed names, and a native view that draws them tinted.",
   "author": "Jan Blazej",
   "license": "MIT",
