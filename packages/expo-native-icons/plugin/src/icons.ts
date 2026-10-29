@@ -1,8 +1,24 @@
 import {existsSync, readdirSync, readFileSync} from 'node:fs'
 import path from 'node:path'
 
-/** One `<path>` of a glyph. `evenOdd` keeps holes punched by an inner contour, the way Figma exports them. */
-export type IconPath = {d: string; evenOdd: boolean}
+/** How strongly a layer is drawn in the hierarchical rendering mode, and which palette colour it takes. */
+export type IconLayerLevel = 'primary' | 'secondary' | 'tertiary'
+
+/**
+ * One `<path>` of a glyph, which is also one layer of its symbol. `evenOdd` keeps holes punched by an inner contour,
+ * the way Figma exports them. The rest is optional and only matters to rendering modes, variable values and effects:
+ * `color` (an explicit `fill`, used by the multicolor mode), `level` (from `opacity` or `fill-opacity`), `variable`
+ * (`data-variable`: the threshold a variable value has to pass to switch the layer on) and `motionGroup`
+ * (`data-motion-group`: layers that move together when an effect runs layer by layer).
+ */
+export type IconPath = {
+  color?: string
+  d: string
+  evenOdd: boolean
+  level?: Exclude<IconLayerLevel, 'primary'>
+  motionGroup?: number
+  variable?: number | 'auto'
+}
 
 /** A single-colour glyph, read from an SVG: its viewBox and the paths drawn in it. */
 export type SvgIcon = {
@@ -38,11 +54,94 @@ export const snakeCase = (name: string): string => name.replace(/-/g, '_').toLow
  */
 export const iconResourceName = (name: string): string => `native_icon_${snakeCase(name)}`
 
+/** A fill that is the tint, not a colour of its own: black (Figma's default export), `currentColor` or none at all. */
+const TINT_FILLS = new Set(['', 'black', 'currentcolor', '#000', '#000000', '#000000ff', 'none'])
+
+const attribute = (attributes: string, name: string): string | undefined =>
+  attributes.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1]
+
+/** `#abc`, `#aabbcc`, `#aabbccdd` or `white` as `#AABBCC`, with the alpha of an eight-digit colour apart. */
+const parseFill = (fill: string): {alpha: number; hex: string} | undefined => {
+  const value = fill.trim().toLowerCase()
+
+  if (value === 'white') {
+    return {alpha: 1, hex: '#FFFFFF'}
+  }
+
+  const short = value.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/)
+  const long = value.match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/)
+
+  if (short) {
+    return {
+      alpha: 1,
+      hex: `#${short
+        .slice(1)
+        .map(digit => `${digit}${digit}`)
+        .join('')}`.toUpperCase(),
+    }
+  }
+
+  return long ? {alpha: long[2] ? Number.parseInt(long[2], 16) / 255 : 1, hex: `#${long[1]}`.toUpperCase()} : undefined
+}
+
+/** The level an opacity reads as: under 0.75 secondary, under 0.375 tertiary (half way between 1, 0.5 and 0.25). */
+const levelOf = (opacity: number): IconPath['level'] => {
+  if (opacity < 0.375) {
+    return 'tertiary'
+  }
+
+  return opacity < 0.75 ? 'secondary' : undefined
+}
+
+/** A path's optional layer attributes: its own colour, its level, its variable threshold and its motion group. */
+const layerOf = (file: string, attributes: string): Partial<IconPath> => {
+  const layer: Partial<IconPath> = {}
+  const fill = attribute(attributes, 'fill') ?? ''
+  const color = TINT_FILLS.has(fill.trim().toLowerCase()) ? undefined : parseFill(fill)
+  const opacity =
+    Number(attribute(attributes, 'opacity') ?? 1) *
+    Number(attribute(attributes, 'fill-opacity') ?? 1) *
+    (color?.alpha ?? 1)
+  const level = Number.isFinite(opacity) ? levelOf(opacity) : undefined
+  const variable = attribute(attributes, 'data-variable')
+  const motionGroup = attribute(attributes, 'data-motion-group')
+
+  if (color) {
+    layer.color = color.hex
+  }
+
+  if (level) {
+    layer.level = level
+  }
+
+  if (variable !== undefined) {
+    const threshold = Number(variable)
+
+    if (variable.trim() !== '' && !(threshold >= 0 && threshold <= 1)) {
+      fail(file, `data-variable takes a threshold from 0 to 1, or nothing for an even step: found "${variable}"`)
+    }
+
+    layer.variable = variable.trim() === '' ? 'auto' : threshold
+  }
+
+  if (motionGroup !== undefined) {
+    const group = Number(motionGroup)
+
+    if (!Number.isInteger(group) || group < 0) {
+      fail(file, `data-motion-group takes a whole number from 0: found "${motionGroup}"`)
+    }
+
+    layer.motionGroup = group
+  }
+
+  return layer
+}
+
 /**
  * Reads one glyph. Only `<path>` elements (optionally `fill-rule="evenodd"`) inside one `<svg>` with a numeric
  * `viewBox` are accepted, and anything else fails loudly: a glyph that silently lost a clip or a mask is worse than
- * none (a mask leftover flattens into a solid square). The colour in the file is ignored: every icon is a template the
- * platform tints.
+ * none (a mask leftover flattens into a solid square). Every icon is a template the platform tints; a path's own
+ * colour and opacity only come back in the multicolor and hierarchical rendering modes.
  */
 export const parseSvgIcon = (file: string): SvgIcon => {
   const name = path.basename(file, '.svg').replace(PLATFORM_SUFFIX, '')
@@ -73,7 +172,7 @@ export const parseSvgIcon = (file: string): SvgIcon => {
       fail(file, '<path> without d')
     }
 
-    paths.push({d: d as string, evenOdd: /fill-rule="evenodd"/.test(attributes)})
+    paths.push({d: d as string, evenOdd: /fill-rule="evenodd"/.test(attributes), ...layerOf(file, attributes)})
   }
 
   if (paths.length === 0) {
@@ -159,6 +258,43 @@ export const iosImageset = (icon: SvgIcon, assetName: string, size: number, auth
   }
 }
 
+/** One layer of a symbol, its variable threshold settled: `data-variable` without a value is an even step. */
+export type IconLayer = Omit<IconPath, 'variable'> & {threshold?: number}
+
+/**
+ * The glyph's paths as layers, in drawing order. Layers marked `data-variable` without a threshold share the range
+ * evenly in the order they are drawn (three of them switch on above 0, 1/3 and 2/3), the way SF Symbols spaces its
+ * own variable layers.
+ */
+export const iconLayers = (icon: SvgIcon): IconLayer[] => {
+  const steps = icon.paths.filter(iconPath => iconPath.variable === 'auto').length
+  let step = 0
+
+  return icon.paths.map(({variable, ...iconPath}) => {
+    if (variable === undefined) {
+      return iconPath
+    }
+
+    const threshold = variable === 'auto' ? step++ / steps : variable
+
+    return {...iconPath, threshold: Number(threshold.toFixed(4))}
+  })
+}
+
+/**
+ * A layer's level, threshold and motion group in its drawable path's `android:name`, which the native view reads
+ * back to draw rendering modes, variable values and effects layer by layer. Empty for a layer with none of them, so
+ * plain icons stay plain. Nothing else reads the name: vector drawables only use it to target animations.
+ */
+export const androidLayerName = (layer: IconLayer): string =>
+  [
+    layer.level && `level=${layer.level}`,
+    layer.threshold !== undefined && `variable=${layer.threshold}`,
+    layer.motionGroup !== undefined && `group=${layer.motionGroup}`,
+  ]
+    .filter(Boolean)
+    .join(';')
+
 /**
  * The glyph as an Android vector drawable, compiled by aapt like any resource and drawn by `ImageView` and Compose's
  * `painterResource` alike. White fill, because every consumer tints it. Its longer side is `size` dp and the other
@@ -167,10 +303,17 @@ export const iosImageset = (icon: SvgIcon, assetName: string, size: number, auth
  * 0,0.
  */
 export const androidVectorDrawable = (icon: SvgIcon, size = 24): string => {
-  const paths = icon.paths.map(
-    iconPath =>
-      `    <path\n        android:fillColor="@android:color/white"${iconPath.evenOdd ? '\n        android:fillType="evenOdd"' : ''}\n        android:pathData="${iconPath.d}"/>`
-  )
+  const paths = iconLayers(icon).map(layer => {
+    const name = androidLayerName(layer)
+    const attributes = [
+      `android:fillColor="${layer.color ? `#${layer.color.slice(1)}` : '@android:color/white'}"`,
+      ...(layer.evenOdd ? ['android:fillType="evenOdd"'] : []),
+      ...(name ? [`android:name="${name}"`] : []),
+      `android:pathData="${layer.d}"`,
+    ]
+
+    return `    <path\n        ${attributes.join('\n        ')}/>`
+  })
   const offset = icon.minX !== 0 || icon.minY !== 0
   const body = offset
     ? `  <group android:translateX="${-icon.minX}" android:translateY="${-icon.minY}">\n${paths.join('\n')}\n  </group>`

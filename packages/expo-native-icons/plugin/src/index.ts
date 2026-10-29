@@ -3,6 +3,7 @@ import {createRunOncePlugin} from 'expo/config-plugins'
 import {withNativeIcons} from './withNativeIcons'
 
 export * from './icons'
+export * from './symbols'
 export type {NativeIconsPluginOptions} from './withNativeIcons'
 export {withNativeIcons}
 
