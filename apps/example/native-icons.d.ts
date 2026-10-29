@@ -2,6 +2,7 @@
 // read (`expo start`, `expo prebuild`), or by `npx native-icons ./assets/icons`.
 declare global {
   interface NativeIcons {
+    'bell-badge': true
     bolt: true
     'bolt-filled': true
     bookmark: true
@@ -100,6 +101,7 @@ declare global {
     'shield-filled': true
     'shopping-bag': true
     'shopping-bag-filled': true
+    'signal-bars': true
     star: true
     'star-filled': true
     'thumb-up': true
@@ -108,10 +110,12 @@ declare global {
     'verified-filled': true
     videocam: true
     'videocam-filled': true
+    volume: true
     warning: true
     'warning-filled': true
     'water-drop': true
     'water-drop-filled': true
+    weather: true
     work: true
     'work-filled': true
   }
