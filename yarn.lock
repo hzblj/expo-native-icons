@@ -1918,7 +1918,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hzblj/expo-native-icons@npm:^0.1.0, @hzblj/expo-native-icons@workspace:*, @hzblj/expo-native-icons@workspace:packages/expo-native-icons":
+"@hzblj/expo-native-icons@npm:^0.1.0":
+  version: 0.1.4
+  resolution: "@hzblj/expo-native-icons@npm:0.1.4"
+  peerDependencies:
+    expo: ">=57"
+    react: "*"
+    react-native: "*"
+  bin:
+    native-icons: ./bin/native-icons.js
+  checksum: 10c0/dbd3047580c918a8c3b1959e885c4957aee7f03ba5a3adad69a077832728e7b1f65d1bf03198fefa5dbd6c46e4dad5a605facc250d265d88d1e78ba164cfeb6b
+  languageName: node
+  linkType: hard
+
+"@hzblj/expo-native-icons@workspace:*, @hzblj/expo-native-icons@workspace:packages/expo-native-icons":
   version: 0.0.0-use.local
   resolution: "@hzblj/expo-native-icons@workspace:packages/expo-native-icons"
   dependencies:
