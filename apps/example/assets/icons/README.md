@@ -10,5 +10,9 @@ in the iOS asset catalog and a vector drawable on Android at prebuild, and write
   by category. `search-off.svg`, the gallery's empty search, is one too.
 - `share.ios.svg` and `share.android.svg`: one icon, `share`, with a glyph per platform (Material's `ios_share` and
   `share`). Neither platform ever sees the other's.
+- `signal-bars.svg`, `volume.svg`, `weather.svg` and `bell-badge.svg`: drawn for the Effects tab from plain shapes,
+  one layer per path. The bars and the waves are `data-variable`; the weather's sun and the bell's clapper have a lower
+  opacity (secondary) and the sun and the badge a colour of their own (multicolor); the clapper and the badge are motion
+  groups of their own.
 - `even-odd.svg` and `non-zero.svg`: the same three circles, with and without `fill-rule="evenodd"`, drawn for the
   Platforms tab.

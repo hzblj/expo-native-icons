@@ -9,7 +9,7 @@ Every package has its own `CLAUDE.md`: read that one before touching it.
 | Path | Package | What lives there |
 | --- | --- | --- |
 | `packages/expo-native-icons/` | `@hzblj/expo-native-icons` | The config plugin and the CLI (`plugin/`, `bin/`), the JavaScript API (`src/`), the `ExpoNativeIcons` view (`ios/`, `android/`) and the plugin's tests. |
-| `apps/example/` | `expo-native-icons-example` (private) | Expo Router app built with `@hzblj/kara-ui`: a searchable gallery of Material Symbols (outlined and filled) with each icon's native names, tint and size, icons beside text and for screen readers, a platform variant, the SVG rules, typed names and the CLI. Runs the package's `src/` from **source**, its plugin from `plugin/build`. |
+| `apps/example/` | `expo-native-icons-example` (private) | Expo Router app built with `@hzblj/kara-ui`: a searchable gallery of Material Symbols (outlined and filled) with each icon's native names, tint and size, icons beside text and for screen readers, an Effects tab (every effect, transition, rendering mode and variable value on the layered `signal-bars`, `volume`, `weather` and `bell-badge`), a platform variant, the SVG rules, typed names and the CLI. Runs the package's `src/` from **source**, its plugin from `plugin/build`. |
 | `scripts/` | | `pack-check.mjs`: the tarball as npm gets it, its plugin and CLI run from it, a consumer type-checked against it. |
 | `.changeset/`, `.github/workflows/` | | Release notes (`yarn changeset`), CI (Biome, typecheck, tests, pack check, the Android module compiled) and the changesets → npm release. |
 

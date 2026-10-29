@@ -1927,6 +1927,7 @@ __metadata:
     expo: "npm:~57.0.31"
     react: "npm:19.2.3"
     react-native: "npm:0.86.3"
+    svgpath: "npm:^2.6.0"
     tsx: "npm:^4.23.15"
     typescript: "npm:~7.0.2"
   peerDependencies:
@@ -7412,6 +7413,13 @@ __metadata:
   version: 1.0.0
   resolution: "supports-preserve-symlinks-flag@npm:1.0.0"
   checksum: 10c0/6c4032340701a9950865f7ae8ef38578d8d7053f5e10518076e6554a9381fa91bd9c6850193695c141f32b21f979c985db07265a758867bac95de05f7d8aeb39
+  languageName: node
+  linkType: hard
+
+"svgpath@npm:^2.6.0":
+  version: 2.6.0
+  resolution: "svgpath@npm:2.6.0"
+  checksum: 10c0/aed042d7cc0e2f3b55d618af2bee58faf8820d53f5d45490194e9bd1cd9ae7d57be641fd3692429a133be2ffb75ff43aad2e6b1c297359ffbc808016a106f199
   languageName: node
   linkType: hard
 

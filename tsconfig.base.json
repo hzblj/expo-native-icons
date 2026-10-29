@@ -10,6 +10,9 @@
     "strict": true,
     // Not the `source` condition: published packages ship one too (kara-ui's points at platform-split sources this
     // config can't resolve). The example maps the workspace package to its source by `paths` instead.
-    "customConditions": ["react-native"]
+    "customConditions": ["react-native"],
+    // A platform-split module (`NativeIcon.ios.tsx` + `NativeIcon.android.tsx`, no plain file) resolves only with
+    // `moduleSuffixes`. This picks iOS for editors, the example and the build; `tsconfig.android.json` checks the rest.
+    "moduleSuffixes": [".ios", ""]
   }
 }

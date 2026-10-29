@@ -4,6 +4,7 @@ import path from 'node:path'
 import {type ConfigPlugin, IOSConfig, withDangerousMod} from 'expo/config-plugins'
 
 import {androidVectorDrawable, iconResourceName, iconTypes, iosImageset, readIconFolder} from './icons'
+import {iconSymbolName, iosSymbolset} from './symbols'
 
 export type NativeIconsPluginOptions = {
   /**
@@ -29,27 +30,34 @@ const AUTHOR = '@hzblj/expo-native-icons'
 
 const IMAGESET_SUFFIX = '.imageset'
 
+const SYMBOLSET_SUFFIX = '.symbolset'
+
 const RESOURCE_PREFIX = iconResourceName('')
+
+const SYMBOL_PREFIX = iconSymbolName('')
 
 const DEFAULT_IOS_SIZE = 24
 
 const DEFAULT_TYPES = 'native-icons.d.ts'
 
-/** Removes what an earlier run wrote for icons no longer in the folder: a deleted SVG must stop existing natively. */
-const removeStaleImagesets = async (catalog: string, keep: Set<string>): Promise<void> => {
+/**
+ * Removes what an earlier run wrote for icons no longer in the folder: a deleted SVG must stop existing natively. Only
+ * sets with this plugin's prefix and its stamp go, so an image or symbol the app added by hand stays.
+ */
+const removeStaleSets = async (catalog: string, suffix: string, prefix: string, keep: Set<string>): Promise<void> => {
   const dirents = await readdir(catalog, {withFileTypes: true}).catch(() => [])
 
   for (const dirent of dirents) {
-    const name = dirent.name.slice(0, -IMAGESET_SUFFIX.length)
+    const name = dirent.name.slice(0, -suffix.length)
 
-    if (!dirent.isDirectory() || !dirent.name.endsWith(IMAGESET_SUFFIX) || keep.has(name)) {
+    if (!dirent.isDirectory() || !dirent.name.endsWith(suffix) || keep.has(name)) {
       continue
     }
 
     const setPath = path.join(catalog, dirent.name)
     const contents = await readFile(path.join(setPath, 'Contents.json'), 'utf8').catch(() => '')
 
-    if (name.startsWith(RESOURCE_PREFIX) && contents.includes(`"author": "${AUTHOR}"`)) {
+    if (name.startsWith(prefix) && contents.includes(`"author": "${AUTHOR}"`)) {
       await rm(setPath, {force: true, recursive: true})
     }
   }
@@ -62,20 +70,29 @@ const withIosIcons: ConfigPlugin<NativeIconsPluginOptions> = (config, {iosSize =
       const {projectRoot} = config.modRequest
       const {ios} = readIconFolder(path.resolve(projectRoot, source))
       const catalog = path.join(IOSConfig.Paths.getSourceRoot(projectRoot), 'Images.xcassets')
-      const written = new Set<string>()
+      const images = new Set<string>()
+      const symbols = new Set<string>()
 
       for (const icon of ios) {
         const assetName = iconResourceName(icon.name)
-        const setPath = path.join(catalog, `${assetName}${IMAGESET_SUFFIX}`)
-        const {contents, svg} = iosImageset(icon, assetName, iosSize, AUTHOR)
+        const symbolName = iconSymbolName(icon.name)
+        const imageset = iosImageset(icon, assetName, iosSize, AUTHOR)
+        const symbolset = iosSymbolset(icon, AUTHOR)
+        const imagePath = path.join(catalog, `${assetName}${IMAGESET_SUFFIX}`)
+        const symbolPath = path.join(catalog, `${symbolName}${SYMBOLSET_SUFFIX}`)
 
-        written.add(assetName)
-        await mkdir(setPath, {recursive: true})
-        await writeFile(path.join(setPath, 'Contents.json'), contents, 'utf8')
-        await writeFile(path.join(setPath, `${assetName}.svg`), svg, 'utf8')
+        images.add(assetName)
+        symbols.add(symbolName)
+        await mkdir(imagePath, {recursive: true})
+        await mkdir(symbolPath, {recursive: true})
+        await writeFile(path.join(imagePath, 'Contents.json'), imageset.contents, 'utf8')
+        await writeFile(path.join(imagePath, `${assetName}.svg`), imageset.svg, 'utf8')
+        await writeFile(path.join(symbolPath, 'Contents.json'), symbolset.contents, 'utf8')
+        await writeFile(path.join(symbolPath, `${symbolName}.svg`), symbolset.svg, 'utf8')
       }
 
-      await removeStaleImagesets(catalog, written)
+      await removeStaleSets(catalog, IMAGESET_SUFFIX, RESOURCE_PREFIX, images)
+      await removeStaleSets(catalog, SYMBOLSET_SUFFIX, SYMBOL_PREFIX, symbols)
 
       return config
     },
@@ -127,8 +144,10 @@ const writeTypes = (projectRoot: string, {source, types = DEFAULT_TYPES}: Native
 }
 
 /**
- * The app's icons as native assets on both platforms, generated from SVGs at prebuild: a template image set per icon in
- * the iOS asset catalog (vector data kept), a vector drawable per icon in Android's `res/drawable`. They have to live
+ * The app's icons as native assets on both platforms, generated from SVGs at prebuild: a template image set and a
+ * custom SF Symbol per icon in the iOS asset catalog (vector data kept), a vector drawable per icon in Android's
+ * `res/drawable`. System controls draw the image, which keeps its point size; `NativeIcon` draws the symbol, which
+ * brings effects, transitions and rendering modes. They have to live
  * in the app's own catalog and resources: `Image("…")` and `UIImage(named:)` look in the main bundle, and an asset
  * catalog shipped by a pod collides with the app's `Assets.car`. A new or changed SVG needs a prebuild.
  */

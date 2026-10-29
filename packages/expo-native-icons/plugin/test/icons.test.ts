@@ -4,16 +4,18 @@ import os from 'node:os'
 import path from 'node:path'
 import {after, test} from 'node:test'
 
-import {iconResourceName as runtimeResourceName} from '../../src/iconResourceName'
+import {iconResourceName as runtimeResourceName, iconSymbolName as runtimeSymbolName} from '../../src/iconResourceName'
 import {main} from '../src/cli'
 import {
   androidVectorDrawable,
+  iconLayers,
   iconResourceName,
   iconTypes,
   iosImageset,
   parseSvgIcon,
   readIconFolder,
 } from '../src/icons'
+import {iconSymbolName, iosSymbolset, nonZeroPath} from '../src/symbols'
 
 const BOLT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>'
 
@@ -35,6 +37,13 @@ test('the plugin and the runtime name an icon the same way', () => {
     assert.equal(iconResourceName(name), runtimeResourceName(name))
   }
   assert.equal(iconResourceName('arrow-left'), 'native_icon_arrow_left')
+})
+
+test('the plugin and the runtime name a symbol the same way', () => {
+  for (const name of ['bolt', 'arrow-left', 'arrow_left', 'chevron-up-2']) {
+    assert.equal(iconSymbolName(name), runtimeSymbolName(name))
+  }
+  assert.equal(iconSymbolName('arrow-left'), 'native_symbol_arrow_left')
 })
 
 test('reads paths, the viewBox and even-odd fills', async () => {
@@ -150,4 +159,97 @@ test('the CLI writes the declaration and fails on a bad folder', async () => {
     console.log = log
     console.error = error
   }
+})
+
+const LAYERED = `<svg viewBox="0 0 24 24">
+  <path d="M2 16h4v6H2z" fill="black" data-variable=""/>
+  <path d="M10 10h4v12h-4z" opacity="0.5" data-variable=""/>
+  <path d="M18 2h4v20h-4z" fill="#f05" fill-opacity="0.25" data-variable="" data-motion-group="1"/>
+  <path d="M0 0h1v1H0z" fill="#11223380" data-variable="0.9"/>
+</svg>`
+
+test('reads a layer from each path: its colour, level, variable threshold and motion group', async () => {
+  const folder = await iconFolder({'bars.svg': LAYERED})
+  const icon = parseSvgIcon(path.join(folder, 'bars.svg'))
+
+  assert.deepEqual(icon.paths, [
+    {d: 'M2 16h4v6H2z', evenOdd: false, variable: 'auto'},
+    {d: 'M10 10h4v12h-4z', evenOdd: false, level: 'secondary', variable: 'auto'},
+    {color: '#FF0055', d: 'M18 2h4v20h-4z', evenOdd: false, level: 'tertiary', motionGroup: 1, variable: 'auto'},
+    {color: '#112233', d: 'M0 0h1v1H0z', evenOdd: false, level: 'secondary', variable: 0.9},
+  ])
+  assert.deepEqual(
+    iconLayers(icon).map(layer => layer.threshold),
+    [0, 0.3333, 0.6667, 0.9]
+  )
+})
+
+test('refuses a variable threshold or a motion group out of range', async () => {
+  const folder = await iconFolder({
+    'group.svg': '<svg viewBox="0 0 24 24"><path d="M0 0h1v1z" data-motion-group="-1"/></svg>',
+    'variable.svg': '<svg viewBox="0 0 24 24"><path d="M0 0h1v1z" data-variable="2"/></svg>',
+  })
+
+  assert.throws(() => parseSvgIcon(path.join(folder, 'variable.svg')), /data-variable takes a threshold from 0 to 1/)
+  assert.throws(() => parseSvgIcon(path.join(folder, 'group.svg')), /data-motion-group takes a whole number/)
+})
+
+test('a vector drawable carries each layer in its path, plain icons unchanged', async () => {
+  const folder = await iconFolder({'bars.svg': LAYERED, 'bolt.svg': BOLT})
+  const layered = androidVectorDrawable(parseSvgIcon(path.join(folder, 'bars.svg')))
+  const plain = androidVectorDrawable(parseSvgIcon(path.join(folder, 'bolt.svg')))
+
+  assert.match(layered, /android:name="level=secondary;variable=0.3333"/)
+  assert.match(layered, /android:fillColor="#FF0055"\n\s+android:name="level=tertiary;variable=0.6667;group=1"/)
+  assert.doesNotMatch(plain, /android:name/)
+})
+
+/** The signed area of each subpath of an absolute polygon path, by the shoelace formula. */
+const areas = (d: string): number[] =>
+  d
+    .split('M')
+    .filter(Boolean)
+    .map(contour => {
+      const points = (contour.replace(/Z/g, '').match(/-?[\d.]+/g) ?? []).map(Number)
+      const pairs = Array.from({length: points.length / 2}, (_, index) => [points[2 * index], points[2 * index + 1]])
+      return (
+        pairs.reduce((area, [x = 0, y = 0], index) => {
+          const [nextX = 0, nextY = 0] = pairs[(index + 1) % pairs.length] ?? []
+          return area + x * nextY - nextX * y
+        }, 0) / 2
+      )
+    })
+
+test('an even-odd path is redrawn for the non-zero rule: holes run against what surrounds them', () => {
+  // Three nested squares all drawn clockwise: even-odd reads a ring and a dot, non-zero a solid square.
+  const d = 'M0 0H30V30H0Z M5 5H25V25H5Z M10 10H20V20H10Z'
+  const signs = areas(nonZeroPath(d)).map(Math.sign)
+
+  assert.deepEqual(signs, [1, -1, 1])
+  assert.deepEqual(areas(nonZeroPath('M0 0V30H30V0Z')).map(Math.sign), [1])
+})
+
+test('a symbol set is a template SF Symbols compiles: three weights, an invisible box, one layer per path', async () => {
+  const folder = await iconFolder({'bars.svg': LAYERED})
+  const {contents, svg} = iosSymbolset(parseSvgIcon(path.join(folder, 'bars.svg')), 'test')
+  const json = JSON.parse(contents)
+
+  assert.deepEqual(json.symbols, [{filename: 'native_symbol_bars.svg', idiom: 'universal'}])
+  assert.equal(json.info.author, 'test')
+
+  for (const id of ['Ultralight-S', 'Regular-S', 'Black-S']) {
+    assert.match(svg, new RegExp(`<g id="${id}" transform="matrix\\(1 0 0 1 [\\d.]+ 696\\)">`))
+    assert.match(svg, new RegExp(`id="left-margin-${id}"`))
+  }
+
+  assert.match(svg, /\.monochrome-0 \{opacity:0\.0;-sfsymbols-motion-group:0\}/)
+  assert.match(
+    svg,
+    /\.hierarchical-2:secondary \{fill:#212121;-sfsymbols-variable-threshold:0\.3333;-sfsymbols-motion-group:0\}/
+  )
+  assert.match(
+    svg,
+    /\.multicolor-3:customFF0055 \{fill:#FF0055;-sfsymbols-variable-threshold:0\.6667;-sfsymbols-motion-group:1\}/
+  )
+  assert.equal(svg.match(/<path class="monochrome-4 /g)?.length, 3)
 })
