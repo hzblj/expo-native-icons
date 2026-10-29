@@ -14,8 +14,9 @@ const CAPLINE = 625.541
 const CAP_HEIGHT = BASELINE - CAPLINE
 
 /**
- * The glyph's longer side in template units: at point size 100 and the small symbol scale, 100 units are 100 points,
- * so a symbol drawn at point size `n` with `.small` scale fills an `n` point box, as the image does.
+ * The symbol's square box in template units: at point size 100 and the small symbol scale, 100 units are 100 points,
+ * so a symbol drawn at point size `n` with `.small` scale fills an `n` point square, as the image does. The glyph sits
+ * in it the way the image letterboxes its viewBox: its longer side across, centred.
  */
 const BOX = 100
 
@@ -208,15 +209,15 @@ const fixed = (value: number) => Number(value.toFixed(3))
 /**
  * A custom SF Symbol set: the glyph as a symbol template, so the platform's symbol machinery works on it (effects,
  * the replace transition, hierarchical, palette and multicolor rendering, variable values). One layer per path, plus
- * an invisible first layer covering the whole viewBox: a symbol is otherwise as tall as its ink, and a glyph that does
- * not fill its box would come out bigger and off centre next to the image of the same icon.
+ * an invisible first layer covering that square: a symbol is otherwise as tall as its ink, and a glyph that does not
+ * fill its box would come out bigger and off centre next to the image of the same icon.
  */
 export const iosSymbolset = (icon: SvgIcon, author: string) => {
-  const scale = BOX / Math.max(icon.width, icon.height)
-  const width = icon.width * scale
-  const height = icon.height * scale
-  const top = -CAP_HEIGHT / 2 - height / 2
-  const box = `M${icon.minX} ${icon.minY}h${icon.width}v${icon.height}h${-icon.width}Z`
+  const side = Math.max(icon.width, icon.height)
+  const scale = BOX / side
+  const left = icon.minX - (side - icon.width) / 2
+  const top = icon.minY - (side - icon.height) / 2
+  const box = `M${left} ${top}h${side}v${side}h${-side}Z`
   const layers: (IconLayer & {hidden?: true})[] = [{d: box, evenOdd: false, hidden: true}, ...iconLayers(icon)]
 
   const styles = [
@@ -240,9 +241,9 @@ export const iosSymbolset = (icon: SvgIcon, author: string) => {
 
   const paths = layers.map((layer, index) => {
     const d = svgpath(layer.evenOdd ? nonZeroPath(layer.d) : layer.d)
-      .translate(-icon.minX, -icon.minY)
+      .translate(-left, -top)
       .scale(scale)
-      .translate(0, top)
+      .translate(0, -CAP_HEIGHT / 2 - BOX / 2)
       .round(3)
       .toString()
     const classes = `monochrome-${index} multicolor-${index}:${multicolorName(layer)} hierarchical-${index}:${layer.level ?? 'primary'}`
@@ -251,8 +252,8 @@ export const iosSymbolset = (icon: SvgIcon, author: string) => {
   })
 
   const margins = SOURCES.flatMap(([id, centre]) => {
-    const left = fixed(centre - width / 2)
-    const right = fixed(centre + width / 2)
+    const left = fixed(centre - BOX / 2)
+    const right = fixed(centre + BOX / 2)
     const line = 'style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;"'
 
     return [
@@ -263,7 +264,7 @@ export const iosSymbolset = (icon: SvgIcon, author: string) => {
 
   const symbols = SOURCES.map(
     ([id, centre]) =>
-      `  <g id="${id}" transform="matrix(1 0 0 1 ${fixed(centre - width / 2)} ${BASELINE})">\n${paths.join('\n')}\n  </g>`
+      `  <g id="${id}" transform="matrix(1 0 0 1 ${fixed(centre - BOX / 2)} ${BASELINE})">\n${paths.join('\n')}\n  </g>`
   )
 
   const guide = (id: string, y: number) =>

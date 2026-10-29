@@ -60,13 +60,13 @@
     "plugin/build/**"
   ],
   "scripts": {
-    "build": "rm -rf build plugin/build && tsc -p ./tsconfig.build.json && tsc -p ./plugin/tsconfig.json",
+    "build": "rm -rf build plugin/build && tsc -p ./tsconfig.build.json && node ../../scripts/fallback-declarations.mjs && tsc -p ./plugin/tsconfig.json",
     "clean": "rm -rf build plugin/build",
     "prepack": "yarn run -T turbo run build --filter=$npm_package_name...",
     "lint": "yarn run -T concurrently \"yarn biome:check\" \"yarn tsc:check\"",
     "lint:fix": "yarn run -T biome check --write .",
     "biome:check": "yarn run -T biome check .",
-    "tsc:check": "yarn run -T concurrently \"tsc -p ./tsconfig.json\" \"tsc -p ./plugin/tsconfig.json --noEmit\"",
+    "tsc:check": "yarn run -T concurrently \"tsc -p ./tsconfig.ios.json\" \"tsc -p ./tsconfig.android.json\" \"tsc -p ./plugin/tsconfig.json --noEmit\"",
     "test": "node --import tsx --test plugin/test/*.test.ts"
   },
   "dependencies": {
