@@ -49,6 +49,10 @@ yarn changeset       # describe a change for the next release
 
 The other libraries from the same author are at **[libraries.janblazej.dev](https://www.libraries.janblazej.dev)**.
 
+## Sponsorship
+
+<a href="https://www.buymeacoffee.com/hzblj"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="48"></a>
+
 ## License
 
 MIT © Jan Blazej
