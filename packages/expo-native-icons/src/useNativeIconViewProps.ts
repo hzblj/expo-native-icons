@@ -2,23 +2,11 @@ import {useMemo} from 'react'
 import {useWindowDimensions} from 'react-native'
 
 import {iconResourceName} from './iconResourceName'
-import type {NativeIconEffectRecord, NativeIconViewProps} from './NativeIconView.types'
-import type {NativeIconEffect, NativeIconEffectTrigger, NativeIconProps} from './types'
+import type {NativeIconViewProps} from './NativeIconView.types'
+import {nativeIconEffectRecord, nativeIconTriggerKey} from './nativeIconEffect'
+import type {NativeIconProps} from './types'
 
 const DEFAULT_SIZE = 24
-
-const effectRecord = (effect: NativeIconEffect): NativeIconEffectRecord => {
-  const {repeat, ...rest} = effect
-
-  return {
-    ...rest,
-    repeatContinuous: repeat === 'continuous' ? true : undefined,
-    repeatCount: typeof repeat === 'number' ? repeat : undefined,
-  }
-}
-
-const triggerKey = (trigger: NativeIconEffectTrigger | undefined) =>
-  trigger === undefined ? undefined : `${typeof trigger}:${String(trigger)}`
 
 /**
  * `NativeIcon`'s props as both platforms' native view takes them: the frame from `size` and font scaling, the
@@ -50,7 +38,7 @@ export const useNativeIconViewProps = ({
   const frame = useMemo(() => ({height: side, width: side}), [side])
   const effectKey = effect ? JSON.stringify(effect) : undefined
   // Keyed by content, so an effect object written inline neither restarts nor re-sends the effect every render.
-  const record = useMemo(() => (effectKey ? effectRecord(JSON.parse(effectKey)) : undefined), [effectKey])
+  const record = useMemo(() => (effectKey ? nativeIconEffectRecord(JSON.parse(effectKey)) : undefined), [effectKey])
   const isLabelled = !!accessibilityLabel
 
   return {
@@ -61,7 +49,7 @@ export const useNativeIconViewProps = ({
     accessible: isLabelled,
     effect: record,
     effectActive,
-    effectTrigger: triggerKey(effectTrigger),
+    effectTrigger: nativeIconTriggerKey(effectTrigger),
     gradient,
     iconColor: color,
     importantForAccessibility: isLabelled ? 'yes' : 'no-hide-descendants',

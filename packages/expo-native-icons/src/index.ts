@@ -2,6 +2,7 @@ export {iconResourceName, iconSymbolName} from './iconResourceName'
 export {NativeIcon} from './NativeIcon'
 export {NativeIconView} from './NativeIconView'
 export type {NativeIconEffectRecord, NativeIconViewComponent, NativeIconViewProps} from './NativeIconView.types'
+export {nativeIconEffectRecord, nativeIconTriggerKey} from './nativeIconEffect'
 export type {
   NativeIconComponent,
   NativeIconEffect,
