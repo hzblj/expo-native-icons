@@ -1,5 +1,11 @@
 # @hzblj/expo-native-icons
 
+## 0.2.1
+
+### Patch Changes
+
+- [#7](https://github.com/hzblj/expo-native-icons/pull/7) [`dd3ccb5`](https://github.com/hzblj/expo-native-icons/commit/dd3ccb552b49748f11863065c619fde71f91cac0) Thanks [@hzblj](https://github.com/hzblj)! - Android 7 (API 24/25) no longer crashes when an icon has `iconColor`, `secondaryColor` or `tertiaryColor`: the colours are read through Expo's `ColorCompat` instead of `Color.toArgb()`, which exists only from Android 8. Needs `expo-modules-core` 57.0.4 or newer.
+
 ## 0.2.0
 
 ### Minor Changes
