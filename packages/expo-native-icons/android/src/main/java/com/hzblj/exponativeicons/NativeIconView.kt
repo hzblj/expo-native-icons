@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable
 import android.os.SystemClock
 import androidx.core.graphics.ColorUtils
 import expo.modules.kotlin.AppContext
+import expo.modules.kotlin.types.ColorCompat
 import expo.modules.kotlin.views.ExpoView
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -455,18 +456,18 @@ class NativeIconView(context: Context, appContext: AppContext) : ExpoView(contex
     return on(from) + (on(shownValue) - on(from)) * t to (t < 1f)
   }
 
-  private fun tintList(): ColorStateList? = iconColor?.let { ColorStateList.valueOf(it.toArgb()) } ?: defaultTint
+  private fun tintList(): ColorStateList? = iconColor?.let { ColorStateList.valueOf(ColorCompat.toArgb(it)) } ?: defaultTint
 
   private fun tintColor(): Int = tintList()?.getColorForState(drawableState, Color.BLACK) ?: Color.BLACK
 
   private fun layerColor(layer: IconLayer, tint: Int): Int =
     when (renderingMode) {
       "palette" -> {
-        val secondary = secondaryColor?.toArgb() ?: tint
+        val secondary = secondaryColor?.let { ColorCompat.toArgb(it) } ?: tint
         when (layer.level) {
           0 -> tint
           1 -> secondary
-          else -> tertiaryColor?.toArgb() ?: secondary
+          else -> tertiaryColor?.let { ColorCompat.toArgb(it) } ?: secondary
         }
       }
       "multicolor" -> layer.color ?: tint
